@@ -1,0 +1,27 @@
+name: Fallback Banner Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_url:
+        description: "Banner image URL"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download image
+        run: curl -L ${{ github.event.inputs.image_url }} -o assets/bottorch-preview.png
+
+      - name: Commit image
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/bottorch-preview.png
+          git commit -m "Add fallback banner"
+          git push
