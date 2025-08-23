@@ -1,29 +1,81 @@
-<form id="leadForm">
-  <input type="email" name="email" placeholder="Your email" required />
-  <button type="submit">Request Access</button>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bottorch Access Request</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 300px;
+    }
+    input, button {
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    input {
+      background: #222;
+      color: #fff;
+    }
+    button {
+      background: #ff5a5f;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e0484d;
+    }
+  </style>
+</head>
+<body>
+  <h1>Request Access to Bottorch</h1>
+  <form id="leadForm">
+    <input type="email" name="email" placeholder="Your email" required />
+    <button type="submit">Request Access</button>
+  </form>
 
-<script>
-  document.getElementById('leadForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = e.target.email.value;
+  <script>
+    document.getElementById('leadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = e.target.email.value;
 
-    await fetch("https://api.github.com/repos/ngliddeng/botorch-site/dispatches", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer YOUR_GH_TOKEN",
-        "Accept": "application/vnd.github.v3+json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        event_type: "slack-lead",
-        client_payload: { email }
-      })
+      await fetch("https://api.github.com/repos/ngliddeng/bottorch-site/dispatches", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer YOUR_GH_TOKEN",
+          "Accept": "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          event_type: "slack-lead",
+          client_payload: { email }
+        })
+      });
+
+      alert("Thanks! You’ll be notified.");
     });
-
-    alert("Thanks! You’ll be notified.");
-  });
-</script>
+  </script>
+</body>
+</html>
 
 <footer>
   <p>🔒 Verified by GitHub Actions | 🧠 Audit-backed lead capture</p>
