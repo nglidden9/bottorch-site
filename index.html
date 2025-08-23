@@ -1,25 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bottorch.com — Reserved & Flip-Ready</title>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; background: #f9f9f9; }
-    h1 { color: #333; }
-    .trust { margin-top: 1rem; font-weight: bold; color: #0077cc; }
-    form { margin-top: 2rem; }
-    input, button { padding: 0.5rem; margin: 0.5rem 0; width: 100%; max-width: 400px; }
-  </style>
-</head>
-<body>
-  <h1>Bottorch.com is Reserved</h1>
-  <p>This premium domain is part of a trust-backed asset bundle. Audit logic, resale triggers, and compliance flows are live.</p>
-  <p class="trust">Interested in acquiring or licensing? Drop your email below.</p>
+<form id="leadForm">
+  <input type="text" name="email" placeholder="Your email" required />
+  <button type="submit">Notify Me</button>
+</form>
 
-  <form action="https://hooks.slack.com/services/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..." method="POST">
-    <input type="email" name="email" placeholder="Your email" required />
-    <button type="submit">Request Access</button>
-  </form>
-</body>
-</html>
+<script>
+  document.getElementById('leadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = { email: formData.get('email') };
+
+    await fetch('https://api.github.com/repos/nglidden9/bottorch-site/dispatches', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_GITHUB_PAT',
+        'Accept': 'application/vnd.github.everest-preview+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        event_type: 'slack-lead',
+        client_payload: payload
+      })
+    });
+    alert('Thanks! You’ll be notified.');
+  });
+</script>
