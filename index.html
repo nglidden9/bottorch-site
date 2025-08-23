@@ -1,29 +1,30 @@
 <form id="leadForm">
-  <input type="text" name="email" placeholder="Your email" required />
-  <button type="submit">Notify Me</button>
+  <input type="email" name="email" placeholder="Your email" required />
+  <button type="submit">Request Access</button>
 </form>
 
 <script>
   document.getElementById('leadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const payload = { email: formData.get('email') };
+    const email = e.target.email.value;
 
-    await fetch('https://api.github.com/repos/nglidden9/bottorch-site/dispatches', {
-      method: 'POST',
+    await fetch("https://api.github.com/repos/ngliddeng/botorch-site/dispatches", {
+      method: "POST",
       headers: {
-        'Authorization': 'Bearer YOUR_GITHUB_PAT',
-        'Accept': 'application/vnd.github.everest-preview+json',
-        'Content-Type': 'application/json'
+        "Authorization": "Bearer YOUR_GH_TOKEN",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        event_type: 'slack-lead',
-        client_payload: payload
+        event_type: "slack-lead",
+        client_payload: { email }
       })
     });
-    alert('Thanks! You’ll be notified.');
+
+    alert("Thanks! You’ll be notified.");
   });
 </script>
+
 <footer>
   <p>🔒 Verified by GitHub Actions | 🧠 Audit-backed lead capture</p>
 </footer>
