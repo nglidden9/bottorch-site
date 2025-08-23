@@ -27,7 +27,8 @@ It delivers speed, trust, and clarity for founders, researchers, and flippers.
 
 Interested in licensing, resale, or affiliate stacking?  
 → Email: `founder@bottorch.com`  
-→ Submit a lead form [link placeholder]
+→ → [Submit a lead form](https://github.com/nglidden9/bottorch-site/issues/new?template=lead-form.md)
+
 
 ---
 
