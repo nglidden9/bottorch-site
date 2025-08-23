@@ -1,41 +1,35 @@
-# bottotch-site
-Landing page and resale bundle for BotTorch.com - premium AI brandable reserved for acquisition.
-# bottorch.com
+# bottorch-site  
+**bottorch.com**  
+Landing page and resale bundle reserved for BotTorch.com — premium AI brandable reserved for resale.
 
-**Deploy Bottorch. Flip Fast. Trust Always.**  
-_Audit-Backed • Zero-Touch • Exclusive_
-
----
-
-## 🔍 What is Bottorch?
-
-bottorch.com is a precision-grade, audit-backed logic engine designed for zero-touch deployment and resale. Whether you're flipping, licensing, or stacking assets, Bottorch delivers speed, trust, and clarity.
+## 🚀 Deploy BotTorch. Flip Fast. Trust Always.  
+**Audit-Backed – Zero-Touch – Exclusive**
 
 ---
 
-## 🚀 Features
+### 🔍 What is BotTorch?
 
-- ✅ Audit-backed workflows
-- ⚡ Zero-touch deployment
-- 🔒 Exclusive domain and repo
-- 📦 Ready for resale, licensing, or affiliate stacking
+BotTorch.com is a precision-grade, audit-backed logic engine designed for zero-touch deployment.  
+It delivers speed, trust, and clarity for founders, researchers, and flippers.
 
 ---
 
-## 📄 Licensing & Resale
+### 💼 What’s Included
 
-This asset is flip-ready and includes:
-
-- Branded GitHub repo
-- Social preview image
-- Wiki starter kit
-- Landing page HTML (available upon request)
+- Flip-ready landing page HTML  
+- Branded outreach templates  
+- Compliance dashboard logic  
+- Affiliate stacking and trust triggers
 
 ---
 
-## 💬 Questions or Licensing Requests?
+### 📬 Get Started
 
-Open a [Discussion](https://github.com/YOUR-REPO/discussions) or contact via branded email.
+Interested in licensing, resale, or affiliate stacking?  
+→ Email: `founder@bottorch.com`  
+→ Submit a lead form [link placeholder]
 
 ---
+
+© 2025 BotTorch.com — Built for speed. Backed by trust.
 
