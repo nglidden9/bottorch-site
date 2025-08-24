@@ -1,42 +1,26 @@
-name: BotTorch Audit
-
-on:
-workflow_dispatch:
-schedule:
-- cron: "0 15 * * *" # daily 09:00 CT
-
 jobs:
-audit:
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
+  guard-forbidden-data:
+    name: Guard: forbid placeholders/simulated data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-- name: AtlasVA audit POST (BotTorch)
-if: ${{ secrets.ATLASVA_WEBHOOK_URL != '' }}
-env:
-URL: ${{ secrets.ATLASVA_WEBHOOK_URL }}
-run: |
-set -e
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-CID="bottorch-${{ github.run_id }}-${{ github.job }}"
-PAYLOAD=$(jq -n --arg ts "$TS" --arg cid "$CID" \
-'{timestamp_utc:$ts, task_type:"bottorch_audit", correlation_id:$cid, domain:"Bottorch.com", notes:"site+lead audit"}')
-echo "$PAYLOAD" | tee atlasva_payload.json
-STATUS=$(curl -s -o atlasva_response.txt -w "%{http_code}" \
--H "Content-Type: application/json" -d "$PAYLOAD" "$URL")
-echo "$STATUS" | tee atlasva_http_status.txt
-test "$STATUS" -ge 200 -a "$STATUS" -lt 300 || \
-(echo "::error::AtlasVA POST failed with status $STATUS"; exit 1)
+      - name: Detect changed files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }} --depth=100
+            git diff --name-only origin/${{ github.base_ref }}...HEAD > changed.txt || true
+          else
+            git diff --name-only HEAD~1 HEAD > changed.txt || true
+          fi
 
-- name: Emit run URL
-run: |
-echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee run_url.txt
-
-- uses: actions/upload-artifact@v4
-with:
-name: bottorch-audit-${{ github.run_id }}
-path: |
-atlasva_payload.json
-atlasva_http_status.txt
-atlasva_response.txt
-run_url.txt
+      - name: Scan for forbidden phrases (case-insensitive)
+        run: |
+          if grep -i -E "placeholder|simulated data" changed.txt; then
+            echo "❌ Forbidden placeholder/simulated data found."
+            exit 1
+          else
+            echo "✅ No forbidden phrases detected."
+          fi
