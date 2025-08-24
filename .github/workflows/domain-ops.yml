@@ -24,5 +24,3 @@ jobs:
           else
             echo "✅ No forbidden phrases detected."
           fi
-
-run_url.txt
