@@ -24,3 +24,5 @@ jobs:
           else
             echo "✅ No forbidden phrases detected."
           fi
+ "✅ No forbidden phrases detected."
+          fi
