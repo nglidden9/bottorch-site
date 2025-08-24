@@ -1,18 +1,3 @@
-name: Domain Ops
-
-on:
-  schedule:
-    - cron: "0 14 * * *"   # 09:00 CT
-    - cron: "0 18 * * *"   # 13:00 CT
-    - cron: "0 0 * * *"    # 19:00 CT
-  workflow_dispatch: {}
-  issues:
-    types: [opened, edited]
-  pull_request:
-    branches: ['**']
-  push:
-    branches: ['**']
-
 jobs:
   guard-forbidden-data:
     name: Guard: forbid placeholders/simulated data
@@ -34,10 +19,10 @@ jobs:
       - name: Scan for forbidden phrases (case-insensitive)
         run: |
           if grep -i -E "placeholder|simulated data" changed.txt; then
-            echo "❌ Forbidden phrase detected!"
+            echo "❌ Forbidden placeholder/simulated data found."
             exit 1
           else
-            echo "✅ No forbidden phrases."
-          
-lasva_response.txt
+            echo "✅ No forbidden phrases detected."
+          fi
+
 run_url.txt
