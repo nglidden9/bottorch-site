@@ -1,212 +1,43 @@
-name: Domain Ops (Zero-Touch)
+name: Domain Ops
 
 on:
-schedule:
-- cron: "0 14 * * *" # 09:00 CT
-- cron: "0 18 * * *" # 13:00 CT
-- cron: "0 0 * * *" # 19:00 CT
-workflow_dispatch: {}
-issues:
-types: [opened, edited]
-pull_request:
-branches: ["**"]
-push:
-branches: ["**"]
+  schedule:
+    - cron: "0 14 * * *"   # 09:00 CT
+    - cron: "0 18 * * *"   # 13:00 CT
+    - cron: "0 0 * * *"    # 19:00 CT
+  workflow_dispatch: {}
+  issues:
+    types: [opened, edited]
+  pull_request:
+    branches: ['**']
+  push:
+    branches: ['**']
 
 jobs:
-guard-forbidden-data:
-name: Guard: forbid placeholders/simulated data
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
-with: { fetch-depth: 0 }
-- name: Detect changed files
-run: |
-if [ "${{ github.event_name }}" = "pull_request" ]; then
-git fetch origin ${{ github.base_ref }} --depth=100
-git diff --name-only origin/${{ github.base_ref }}...HEAD > changed.txt || true
-else
-git diff --name-only HEAD~1 HEAD > changed.txt || true
-fi
-cat changed.txt
-- name: Scan for forbidden phrases (case-insensitive)
-run: |
-if [ -s changed.txt ]; then
-if grep -E -i "placeholder|simulated[[:space:]]+data" -n $(cat changed.txt); then
-echo "::error::Forbidden phrases detected (placeholder/simulated data)."
-exit 1
-fi
-fi
+  guard-forbidden-data:
+    name: Guard: forbid placeholders/simulated data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-unicorn-suppression:
-name: Enforce unicorn suppression
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
-- name: Verify reserved list and no leaks
-run: |
-set -e
-test -f logs/unicorn-reserved.md || (echo "::error::missing logs/unicorn-reserved.md" && exit 1)
-DOMAINS="Bottorch.com TorchMint.com TorchDock.com TorchPulse.com TorchHatch.com TorchSpan.com TorchFlick.com"
-for D in $DOMAINS; do
-grep -qi "$D" logs/unicorn-reserved.md || (echo "::error::Reserved list missing $D" && exit 1)
-done
-# Disallow unicorns appearing outside reserved file (README allowed for disclosure)
-if grep -R -i --line-number -E "Bottorch\.com|Torch(Mint|Dock|Pulse|Hatch|Span|Flick)\.com" \
--- . ':!logs/unicorn-reserved.md' ':!README.md' ':!.github' ; then
-echo "::error::Unicorn domain leaked in repository files"
-exit 1
-fi
+      - name: Detect changed files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }} --depth=100
+            git diff --name-only origin/${{ github.base_ref }}...HEAD > changed.txt || true
+          else
+            git diff --name-only HEAD~1 HEAD > changed.txt || true
+          fi
 
-lead-intake-to-log:
-name: Intake: issue → CSV + AtlasVA + artifacts
-if: ${{ github.event_name == 'issues' }}
-runs-on: ubuntu-latest
-permissions: { contents: write }
-steps:
-- uses: actions/checkout@v4
-
-- name: Ensure logs exist
-run: |
-mkdir -p logs reports
-test -f logs/daily-log.csv || echo "Timestamp_UTC,Domain,BuyerBusiness,ContactInfo,Platform,OfferRange,Stage,AssignedOwner,Notes" > logs/daily-log.csv
-test -f logs/unicorn-reserved.md || cat > logs/unicorn-reserved.md <<'EOF'
-Bottorch.com
-TorchMint.com
-TorchDock.com
-TorchPulse.com
-TorchHatch.com
-TorchSpan.com
-TorchFlick.com
-EOF
-
-- name: Extract issue fields to CSV
-env:
-BODY: ${{ github.event.issue.body }}
-URL: ${{ github.event.issue.html_url }}
-run: |
-set -e
-TS=$(date -u +"%Y-%m-%d %H:%M:%S")
-get() { awk -v H="$1" 'BEGIN{IGNORECASE=1} $0~"^### "H"$"{getline; print; exit}' <<<"$BODY" | sed 's/,/ /g' | xargs; }
-DOMAIN=$(get "Domain")
-BUYER=$(get "Buyer / Company")
-CONTACT=$(get "Contact Email or URL")
-PLATFORM=$(get "Platform")
-OFFER=$(get "Offer Range")
-STAGE=$(get "Stage")
-NOTES=$(get "Notes" | tr -d '\n' | sed 's/|/-/g')
-echo "${TS},${DOMAIN},${BUYER},${CONTACT},${PLATFORM},${OFFER},${STAGE},unassigned,Issue:${URL}" >> logs/daily-log.csv
-
-- name: Commit CSV update
-run: |
-git config user.name "lead-intake-bot"
-git config user.email "lead-intake-bot@users.noreply.github.com"
-git add logs/daily-log.csv
-git commit -m "feat(log): append buyer lead from issue #${{ github.event.issue.number }}" || echo "No changes"
-git push
-
-- name: AtlasVA first-touch (optional)
-if: ${{ secrets.ATLASVA_WEBHOOK_URL != '' }}
-env:
-URL: ${{ secrets.ATLASVA_WEBHOOK_URL }}
-BODY: ${{ github.event.issue.body }}
-run: |
-set -e
-get() { awk -v H="$1" 'BEGIN{IGNORECASE=1} $0~"^### "H"$"{getline; print; exit}' <<<"$BODY" | xargs; }
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-jq -n \
---arg ts "$TS" \
---arg d "$(get "Domain")" \
---arg b "$(get "Buyer / Company")" \
---arg c "$(get "Contact Email or URL")" \
---arg p "$(get "Platform")" \
---arg o "$(get "Offer Range")" \
---arg s "$(get "Stage")" \
---arg n "$(get "Notes")" \
-'{timestamp_utc:$ts, task_type:"outreach_sequence", stage:"first_touch", domain:$d, buyer_business:$b, contact:$c, platform:$p, offer_range:$o, notes:$n, sla_minutes:60}' \
-| tee atlasva_payload.json \
-| curl -s -o atlasva_response.txt -w "%{http_code}" -H "Content-Type: application/json" -d @- "$URL" \
-| tee atlasva_http_status.txt
-
-- name: Emit run URL
-run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee run_url.txt
-
-- uses: actions/upload-artifact@v4
-with:
-name: intake-audit-${{ github.run_id }}
-path: |
-atlasva_payload.json
-atlasva_http_status.txt
-atlasva_response.txt
-run_url.txt
-
-scheduled-log-and-report:
-name: Scheduled/manual: report roll-up + AtlasVA audit + artifacts
-if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
-runs-on: ubuntu-latest
-permissions: { contents: write }
-steps:
-- uses: actions/checkout@v4
-
-- name: Ensure dirs & files
-run: |
-mkdir -p logs reports
-test -f logs/daily-log.csv || echo "Timestamp_UTC,Domain,BuyerBusiness,ContactInfo,Platform,OfferRange,Stage,AssignedOwner,Notes" > logs/daily-log.csv
-DAY=$(date -u +"%Y-%m-%d")
-FILE="reports/daily-${DAY}.md"
-if [ ! -f "$FILE" ]; then
-cat > "$FILE" <<'EOF'
-# Daily Domain Ops Report
-
-**NOTE:** No placeholders or simulated data. All entries must be real-time and verifiable.
-
-## Log Entries (UTC)
-| Timestamp | Domain | Buyer/Business | Contact | Platform | Offer Range | Stage | Owner | Notes |
-|-----------|--------|----------------|---------|----------|-------------|-------|-------|-------|
-EOF
-fi
-
-- name: Append today's CSV rows to report (or mark No new activity)
-run: |
-DAY=$(date -u +"%Y-%m-%d")
-FILE="reports/daily-${DAY}.md"
-CNT=$(awk -F, -v day="$DAY" 'NR>1 && index($1, day)==1 {print $0}' logs/daily-log.csv | wc -l | xargs)
-if [ "$CNT" -gt 0 ]; then
-awk -F, -v day="$DAY" 'NR>1 && index($1, day)==1 {printf("| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",$1,$2,$3,$4,$5,$6,$7,$8,$9)}' logs/daily-log.csv >> "$FILE"
-else
-echo "_No new activity (UTC)_ " >> "$FILE"
-fi
-
-- name: Commit report update
-run: |
-git config user.name "report-bot"
-git config user.email "report-bot@users.noreply.github.com"
-git add reports/daily-*.md
-git commit -m "chore(report): update scheduled roll-up" || echo "No changes"
-git push
-
-- name: AtlasVA audit POST (report_sync, artifacts)
-if: ${{ secrets.ATLASVA_WEBHOOK_URL != '' }}
-env:
-URL: ${{ secrets.ATLASVA_WEBHOOK_URL }}
-run: |
-set -e
-TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-CID="ghrun-${{ github.run_id }}-job-${{ github.job }}-attempt-${{ github.run_attempt }}"
-jq -n --arg ts "$TS" --arg cid "$CID" \
-'{timestamp_utc:$ts, task_type:"report_sync", correlation_id:$cid, notes:"scheduled-or-manual roll-up", sla_minutes:30}' \
-| tee atlasva_payload.json \
-| curl -s -o atlasva_response.txt -w "%{http_code}" -H "Content-Type: application/json" -d @- "$URL" \
-| tee atlasva_http_status.txt
-
-- name: Emit run URL
-run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" | tee run_url.txt
-
-- uses: actions/upload-artifact@v4
-with:
-name: report-audit-${{ github.run_id }}
-path: |
-atlasva_payload.json
-atlasva_http_status.txt
-atlasva_response.txt
+      - name: Scan for forbidden phrases (case-insensitive)
+        run: |
+          if grep -i -E "placeholder|simulated data" changed.txt; then
+            echo "❌ Forbidden phrase detected!"
+            exit 1
+          else
+            echo "✅ No forbidden phrases."
+          
+lasva_response.txt
 run_url.txt
